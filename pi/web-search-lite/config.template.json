@@ -1,0 +1,11 @@
+{
+	"provider": "deepseek",
+	"proxy": "",
+	"apiKeys": {
+		"deepseek": "sk-REPLACE-ME"
+	},
+	"fetch": {
+		"extractors": ["html", "deepseek", "jina"],
+		"minChars": 50
+	}
+}

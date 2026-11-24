@@ -1,0 +1,8 @@
+{
+	"name": "my-workspace",
+	"private": true,
+	"pi": {
+		"extensions": ["./pi/extensions"],
+		"skills": ["./pi/skills"]
+	}
+}
