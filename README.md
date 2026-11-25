@@ -44,7 +44,7 @@ zpi 的运行时配置 `~/.pi/agent/zpi/config.json`（`zellijSession=main` 等�
 
 ### 键位（pi/keybindings.json）
 
-`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+E`——对齐 CC 的 `ctrl+x ctrl+e`（pi 不支持和弦，取单键）；pi 默认 `Ctrl+G` 会被 zellij 的 locked 模式拦截。改完 `/reload` 生效。
+`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+K`——对齐本机 CC 实际键位（`~/.claude/keybindings.json` 自定义的 `ctrl+k: chat:externalEditor`；CC 官方默认是 `Ctrl+G` / `ctrl+x ctrl+e`，其中 `Ctrl+G` 会被 zellij 的 locked 模式拦截，pi 也不支持和弦）。副作用：pi 里 `ctrl+k` 原本的「删到行尾」被盖掉（app 动作优先；删到行首 `ctrl+u` 仍在）。改完 `/reload` 生效。
 
 ### pi-web-search-lite（pi/vendor/pi-web-search-lite + pi/web-search-lite/config.template.json）
 
