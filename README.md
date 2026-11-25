@@ -19,7 +19,8 @@ install.sh 幂等、可重复运行，做的事：
 1. `pi install <本仓绝对路径>` —— extensions + skill-creator + vendor 的 pi-web-search-lite 注册为本地 package。本地 package 从仓库路径直接加载、不拷贝，改完代码 `/reload` 即生效。
 2. pi-web-search-lite（已 vendor 进本仓，见下）：若有旧的 `npm:pi-web-search-lite` 安装则自动移除（避免重复注册工具）；`npm install` 装 undici；写入 / 对齐配置。
 3. zpi 运行时配置：`~/.pi/agent/zpi/config.json` 不存在时写入模板（`zellijSession=main` 等；已存在不动）。
-4. zellij：已有 `~/.config/zellij/config.kdl` 先备份，再安装本仓版本和 `zellij_se.sh`；若检测到 zellij-claude-status（独立项目，不在本仓）就跑它的 `install.py` 把 Alt q 等注入回来。
+4. pi 键位：`~/.pi/agent/keybindings.json` 软链到本仓 `pi/keybindings.json`（已有实体文件不动）。
+5. zellij：已有 `~/.config/zellij/config.kdl` 先备份，再安装本仓版本和 `zellij_se.sh`；若检测到 zellij-claude-status（独立项目，不在本仓）就跑它的 `install.py` 把 Alt q 等注入回来。
 
 装完一般还差一步：编辑 `~/.pi/agent/pi-web-search-lite/config.json`，填 DeepSeek key（或 `export DEEPSEEK_API_KEY`，环境变量优先于文件）、按机器填 proxy。
 
@@ -40,6 +41,10 @@ zpi 的运行时配置 `~/.pi/agent/zpi/config.json`（`zellijSession=main` 等�
 ### 技能（pi/skills）
 
 - **skill-creator** —— 创建 / 迭代 / 评测 skill 的通用技能，自包含，无工作相关内容。
+
+### 键位（pi/keybindings.json）
+
+`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+E`——对齐 CC 的 `ctrl+x ctrl+e`（pi 不支持和弦，取单键）；pi 默认 `Ctrl+G` 会被 zellij 的 locked 模式拦截。改完 `/reload` 生效。
 
 ### pi-web-search-lite（pi/vendor/pi-web-search-lite + pi/web-search-lite/config.template.json）
 

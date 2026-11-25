@@ -66,6 +66,17 @@ else
     say "zpi：$ZCFG 已存在，未动"
 fi
 
+# ---------- pi：keybindings（canonical 在本仓，软链进 agent 目录；改完 /reload 生效） ----------
+KB="$HOME/.pi/agent/keybindings.json"
+if [ "$(readlink -f "$KB" 2>/dev/null)" = "$(readlink -f "$REPO/pi/keybindings.json")" ]; then
+    say "keybindings：软链已就位"
+elif [ -e "$KB" ] || [ -L "$KB" ]; then
+    warn "keybindings：$KB 已存在（$(readlink "$KB" 2>/dev/null || echo 实体文件)），未动；要改用本仓版本：mv $KB $KB.bak && ln -s $REPO/pi/keybindings.json $KB"
+else
+    ln -s "$REPO/pi/keybindings.json" "$KB"
+    say "keybindings：已软链 → $REPO/pi/keybindings.json"
+fi
+
 # ---------- zellij ----------
 ZD="$HOME/.config/zellij"
 mkdir -p "$ZD"
