@@ -31,6 +31,13 @@
  *   - `zellij subscribe -p <ids...> -f json` streams pane_update events for
  *     any pane of any session; any render (streaming, spinner, user typing)
  *     counts as activity.
+ *
+ * Prompt economy: tool descriptions carry only the call contract (what it
+ * does, how to fill params). Trigger rules live in promptGuidelines.
+ * Mechanisms and per-event details (attach commands, depth limits, domain
+ * listings, recovery paths) are delivered in results and error texts at the
+ * moment they matter — see pi-web-search-lite's result envelope for the
+ * pattern this follows.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -667,17 +674,15 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "zpi_send",
 		label: "向 zpi 会话发消息",
-		description: [
-			"向另一个 pi 会话所在的 zellij pane 投递消息：文本会被键入该会话的输入框并提交。目标正在运行时通常先中断其当前轮、消息立即生效；但检测到有工具调用正在执行时不中断，作为 steering 等当前轮结束后生效（避免工具被中途终止、副作用停在半途）。",
-			"消息按单行投递；长内容先写入文件，消息里只引用路径。",
-		].join(" "),
+		// 只留调用契约；智能中断/steering 机制见 injectMessage 注释与 README——模型无参数可控它，无需预付
+		description: "向另一个 pi 会话投递消息（目标运行中也能送达生效）。单行投递，长内容先写文件、只引用路径。",
 		promptSnippet: "向其他 pi 会话投递消息",
 		parameters: Type.Object({
 			target: Type.String({
 				minLength: 1,
-				description: '会话名或 session id（用 zpi_list 查可用目标），或 "parent"（= 派生本会话的那个会话，仅 zpi_open 派生的会话可用）。',
+				description: '会话名或 session id（zpi_list 查），或 "parent"（仅被 zpi_open 派生的会话可用）',
 			}),
-			message: Type.String({ description: "要投递的消息内容（按单行发送）" }),
+			message: Type.String({ description: "消息内容（单行）" }),
 		}),
 		async execute(_toolCallId, params) {
 			try {
@@ -764,11 +769,10 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "zpi_list",
 		label: "列出 zpi 会话",
-		description: "列出 zpi 管理域内的全部 agent 会话及实时状态：pane 是否存活、闲置时长、任务内容、恢复句柄。",
+		description: "列出全部 agent 会话及实时状态：是否在跑、闲置多久、任务、恢复句柄。",
 		promptSnippet: "列出所有 pi 会话及实时状态",
-		promptGuidelines: [
-			"要确认其他会话的状态（是否还在跑、闲置多久、领了什么任务）时用 zpi_list 查，不要凭记忆猜测。",
-		],
+		// zpi_close 的触发规则并到这里：guidelines 按工具注入，一条说两件事比两条便宜
+		promptGuidelines: ["确认其他会话状态用 zpi_list 查，别凭记忆猜；回收或终止后台会话用 zpi_close。"],
 		parameters: Type.Object({}),
 		async execute() {
 			const zs = cfg.zellijSession;
@@ -809,23 +813,15 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "zpi_open",
 		label: "新开 zpi 会话",
-		description: [
-			`在专属 zellij 会话（${cfg.zellijSession}）里新开一个 pane 运行 pi 子会话，并向它派发任务。`,
-			"用户要求 开新会话 / 开个 agent / 在另一个会话里做某事 / spawn 一个后台 agent 时使用。",
-			"任何会话都能用，包括 zpi 子会话自己；嵌套深度受 zpi 配置的 maxDepth 限制。",
-			"子会话立即开始工作；用户可随时 attach 观察或接管。",
-			'名字加 "keep-" 前缀可豁免闲置自动回收。',
-			"返回给用户的 attach 命令。",
-		].join(" "),
+		// 触发规则归 guidelines；attach 命令/会话名/深度上限详情在结果与拒绝错误里按次交付
+		description: "新开一个 pi 子会话（zellij pane）并派发任务，立即开始工作；可嵌套但有深度上限。",
 		promptSnippet: "新开一个 pi 子会话（zellij pane）并派发任务",
-		promptGuidelines: [
-			"当你发现多任务可以并行、手头卡在X但是手上还有A,B,C可以独立启动、想开subagent、用户显式让你开新会话做某事时，用 zpi_open。",
-		],
+		promptGuidelines: ["想并行 / 开 subagent / 用户要开新会话时用 zpi_open。"],
 		parameters: Type.Object({
-			task: Type.String({ description: "派发给新会话的任务提示词（写清目标、约束与收尾要求）" }),
-			name: Type.Optional(Type.String({ description: "短显示名（默认从任务内容派生）" })),
-			cwd: Type.Optional(Type.String({ description: "子会话的工作目录（默认当前目录）" })),
-			model: Type.Optional(Type.String({ description: "子会话使用的模型，格式 provider/model" })),
+			task: Type.String({ description: "任务提示词：写清目标、约束、收尾要求" }),
+			name: Type.Optional(Type.String({ description: "短名；keep- 前缀豁免闲置自动回收" })),
+			cwd: Type.Optional(Type.String({ description: "工作目录（默认当前）" })),
+			model: Type.Optional(Type.String({ description: "provider/model" })),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const myDepth = Number(process.env.ZPI_DEPTH ?? "0") || 0;
@@ -887,15 +883,9 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "zpi_close",
 		label: "关闭 zpi 会话",
-		description: [
-			`关闭 ${cfg.zellijSession} zellij 会话里任意 pi 会话的 pane——zpi 亲生会话（按名字或 session id）或手动打开的（按 π 标题名）。`,
-			"pi 会话文件始终保留，之后可用 pi --session-id <id> 恢复。",
-			"关闭自己所在的 pane 时走优雅退出。",
-		].join(" "),
+		// 目标匹配机制（亲生 vs 手动 π 标题）不进描述：找不到时错误文本会列出全部可选目标
+		description: "关闭一个 agent 会话的 pane；历史保留，可 pi --session-id 恢复。",
 		promptSnippet: "关闭某个 pi 会话的 zellij pane",
-		promptGuidelines: [
-			"需要回收或终止某个后台会话时用 zpi_close；被关会话的历史仍可用 pi --session-id 恢复。",
-		],
 		parameters: Type.Object({
 			target: Type.String({ description: "要关闭的会话名或 session id" }),
 		}),
