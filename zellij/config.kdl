@@ -558,4 +558,6 @@ scrollback_editor "<HOME>/.config/zellij/zellij_se.sh"
 pane_frame_style "titles"
 // 不自动套 swap 布局：Alt n 切开焦点 pane（沿长边），左1右2 时在左边按 Alt n 得 4 个等大格；Ctrl b 空格仍可手动切布局（2026-10-28 用户选）
 auto_layout false
+// 0.45 新行为：滚轮滚 pane 隐式进 scroll 模式——底栏弹「Ctrl + …」快捷键表，之后单字母 e/s/u/d/j/k 被吃（浮层 pi pane 不捕鼠标最常触发）；关掉后滚轮只滚内容，要进 scroll 模式用 Ctrl s（2026-11-25）
+scroll_mode_sync false
 
