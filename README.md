@@ -44,16 +44,16 @@ zpi 的运行时配置 `~/.pi/agent/zpi/config.json`（`zellijSession=main` 等�
 
 ### 键位（pi/keybindings.json）
 
-`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Alt+E`，CC 侧同步（`~/.claude/keybindings.json` Chat 里 `alt+e: chat:externalEditor`，替换原自定义 `ctrl+k`；`ctrl+x ctrl+e` 和弦保留，CC 热载）。选键记录（2026-11-25，三层查证：pi 全部默认动作 + CC 官方默认与本机配置 + 本仓 zellij）：
+`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+E`，CC 侧同键（`~/.claude/keybindings.json` Chat 里 `ctrl+e: chat:externalEditor`，`ctrl+x ctrl+e` 和弦保留，CC 热载）。选键记录（2026-11-25，三层查证：pi 全部默认动作 + CC 官方默认与本机配置 + 本仓 zellij）：
 
 - 裸字母不可行：两边主输入框都是先匹配绑定、无绑定才落字，绑了就打不出那个字母
 - `Ctrl+G`（pi/CC 官方默认）→ zellij `Ctrl g` 是 locked 模式，到不了 pi ✗
 - `Ctrl+K`（本机 CC 原自定义）→ pi 里「删到行尾」的唯一键，被盖后无兜底 ✗
-- `Ctrl+E` → pi 里阴影「行尾跳转」（`End` 兜底，勉强可用）～
 - `Ctrl+Q` → zellij 里是 Quit，会退整个 zellij ✗
-- `Alt+E` → pi / CC / zellij 三层全空，零冲突 ✓；Alt 系也是本仓 zellij 的既定方案（中文输入法友好）
+- `Alt+E` → 三层配置零冲突，但实测按了没反应：pi 对 legacy/kitty/xterm 三种编码全都匹配（loader 实测），说明键没到 pi——疑 zellij→pane 的 Alt 转发问题（其 kitty 协议转发有前科，zellij#5191 等），未深究；探针畱在 `~/agentic/altprobe.mjs` 可复测 ✗
+- `Ctrl+E` → pi 里阴影「行尾跳转」（`End` 键兜底）；ctrl 链路在本栈被日常验证（ctrl+l / ctrl+d 天天在用）✓ 定案
 
-pi 侧改完 `/reload` 生效；CC 改 keybindings.json 自动热载。
+pi 侧改完 `/reload` 生效（注意 pi 忙碌时 /reload 会被拒，等空闲再敲）；CC 改 keybindings.json 自动热载。
 
 ### pi-web-search-lite（pi/vendor/pi-web-search-lite + pi/web-search-lite/config.template.json）
 
