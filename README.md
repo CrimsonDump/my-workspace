@@ -44,14 +44,14 @@ zpi 的运行时配置 `~/.pi/agent/zpi/config.json`（`zellijSession=main` 等�
 
 ### 键位（pi/keybindings.json）
 
-`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+E`，CC 侧同键（`~/.claude/keybindings.json` Chat 里 `ctrl+e: chat:externalEditor`，`ctrl+x ctrl+e` 和弦保留，CC 热载）。选键记录（2026-11-25，三层查证：pi 全部默认动作 + CC 官方默认与本机配置 + 本仓 zellij）：
+`~/.pi/agent/keybindings.json` 软链到本仓的 `pi/keybindings.json`（pi 只从 agent 目录读键位，package 带不动）。目前一条：外部编辑器 `app.editor.external` → `Ctrl+\`，CC 侧同键（`~/.claude/keybindings.json` Chat 里 `ctrl+\: chat:externalEditor`；`ctrl+x ctrl+e` 和弦保留，CC 热载）。**定键诉求：不牺牲 readline 行内编辑键（ctrl+e/k/a/u/w 都在用）**。选键记录（2026-11-25，四层查证：pi 全部默认动作 + CC 本机配置与官方默认 + 本仓 zellij + 终端编码层）：
 
-- 裸字母不可行：两边主输入框都是先匹配绑定、无绑定才落字，绑了就打不出那个字母
-- `Ctrl+G`（pi/CC 官方默认）→ zellij `Ctrl g` 是 locked 模式，到不了 pi ✗
-- `Ctrl+K`（本机 CC 原自定义）→ pi 里「删到行尾」的唯一键，被盖后无兜底 ✗
-- `Ctrl+Q` → zellij 里是 Quit，会退整个 zellij ✗
-- `Alt+E` → 三层配置零冲突，但实测按了没反应：pi 对 legacy/kitty/xterm 三种编码全都匹配（loader 实测），说明键没到 pi——疑 zellij→pane 的 Alt 转发问题（其 kitty 协议转发有前科，zellij#5191 等），未深究；探针畱在 `~/agentic/altprobe.mjs` 可复测 ✗
-- `Ctrl+E` → pi 里阴影「行尾跳转」（`End` 键兜底）；ctrl 链路在本栈被日常验证（ctrl+l / ctrl+d 天天在用）✓ 定案
+- 裸字母不可行（两边主输入框先匹配绑定、无绑定才落字）；字母族 a/e/f/w 有兜底、k/r/x/y 无兜底，但全是 readline 键，一律不动；c/d/j/l/v/z 刚需
+- zellij normal 模式拦 9 个：`Ctrl+G`(locked) `Q`(Quit!) `B`(tmux) `H`(move) `N`(resize) `O`(session) `P`(pane) `S`(scroll) `T`(tab)；`Ctrl+I`/`M` 字节上就是 Tab/Enter
+- 符号族：`[` = ESC；`-`/`_`/`]` pi 与 CC 都占（undo / jumpForward / openArtifact）；`` ` ``/`@`/`2`/`space` 同为 0x00 歧义且 ctrl+space 是输入法切换；数字 2–8 是符号键别名（ctrl+4=ctrl+\、ctrl+5=ctrl+]…），1/9/0 与 , . ; ' / = 无 legacy 编码
+- `Alt+E` → 三层配置零冲突，但实测按了没反应：pi 对 legacy/kitty/xterm 三种编码全都匹配（loader 实测），说明键没到 pi——疑 zellij→pane 的 Alt 转发问题（其 kitty 协议转发有前科，zellij#5191 等），未深究；探针留在 `~/agentic/altprobe.mjs` 可复测 ✗
+- `Ctrl+Shift+字母`、`Ctrl+,` 等无 legacy 编码的键：须 kitty 通道存活（自检法：pi 里按 ctrl+shift+p，模型反向切换=活）；未选只为不依赖这条未验证通道
+- **`Ctrl+\`（0x1c 独立字节）** → pi/CC/zellij 三层全空、readline 一键不动、plain-ctrl 通道（日常验证过）即达；pi loader 实测 0x1c 字节触发 ✓ 定案
 
 pi 侧改完 `/reload` 生效（注意 pi 忙碌时 /reload 会被拒，等空闲再敲）；CC 改 keybindings.json 自动热载。
 
