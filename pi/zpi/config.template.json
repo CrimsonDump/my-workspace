@@ -1,0 +1,8 @@
+{
+	"zellijSession": "main",
+	"maxPanesPerTab": 8,
+	"idleTimeoutMinutes": 60,
+	"checkIntervalMinutes": 5,
+	"keepPrefix": "keep-",
+	"maxDepth": 3
+}

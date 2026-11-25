@@ -1,8 +1,11 @@
 {
 	"name": "my-workspace",
 	"private": true,
+	"dependencies": {
+		"undici": "^8.12.3"
+	},
 	"pi": {
-		"extensions": ["./pi/extensions"],
+		"extensions": ["./pi/extensions", "./pi/vendor/pi-web-search-lite/src/index.ts"],
 		"skills": ["./pi/skills"]
 	}
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# my-workspace 一键安装：pi（extensions / skill-creator / pi-web-search-lite）+ zellij 配置。
+# my-workspace 一键安装：pi（extensions / skill-creator / vendor 的 pi-web-search-lite / zpi 运行时配置）+ zellij 配置。
 # 幂等，可重复运行；已存在的配置会先备份。仓库放在哪个路径都行（pi package 按本仓绝对路径注册）。
 set -euo pipefail
 
@@ -20,35 +20,50 @@ if [ -d "$HOME/.pi/agent/extensions" ] && [ ! -L "$HOME/.pi/agent/extensions" ];
     warn "~/.pi/agent/extensions 还是实体目录。若里面是本仓旧 clone，移走或删掉以免双重加载：mv ~/.pi/agent/extensions ~/old-pi-extensions"
 fi
 
-# ---------- pi：pi-web-search-lite ----------
-if command -v pi >/dev/null 2>&1; then
-    if pi list 2>/dev/null | grep -q 'npm:pi-web-search-lite'; then
-        say "pi：pi-web-search-lite 已在 package 列表"
-    else
-        say "pi：安装 npm:pi-web-search-lite（需能访问 npm registry，受限网络先配代理）"
-        pi install npm:pi-web-search-lite || warn "安装失败；网络恢复后重跑本脚本即可"
-    fi
+# ---------- pi：pi-web-search-lite（本仓 vendor，取代原 npm 安装） ----------
+# 迁移：老安装走 npm:pi-web-search-lite，与本仓 pi/vendor/ 副本会重复注册 web_search / web_fetch
+if command -v pi >/dev/null 2>&1 && pi list 2>/dev/null | grep -q 'npm:pi-web-search-lite'; then
+    say "pi：移除 npm:pi-web-search-lite（已由本仓 pi/vendor/ 取代）"
+    pi remove npm:pi-web-search-lite || warn "移除失败；手动执行：pi remove npm:pi-web-search-lite"
+fi
+
+# 本地 package 的运行时依赖（undici）自己装；受限网络先配 HTTPS_PROXY
+if command -v npm >/dev/null 2>&1; then
+    say "npm：安装本仓依赖（undici）"
+    (cd "$REPO" && npm install --no-audit --no-fund) \
+        || warn "npm install 失败（受限网络带 HTTPS_PROXY 重试）；恢复后重跑：cd $REPO && npm install"
 fi
 
 CFG="$HOME/.pi/agent/pi-web-search-lite/config.json"
 if [ -f "$CFG" ]; then
-    # 已有配置：只对齐 fetch 两项（本仓的推荐值），provider / proxy / apiKeys 一概不动
+    # 已有配置：只对齐 fetch 两项 + userAgent（本仓的推荐值），provider / proxy / apiKeys 一概不动
     if command -v node >/dev/null 2>&1; then
         node -e '
             const fs = require("fs"); const p = process.argv[1];
             const c = JSON.parse(fs.readFileSync(p, "utf8"));
             c.fetch = Object.assign({}, c.fetch, { extractors: ["html", "deepseek", "jina"], minChars: 50 });
+            c.userAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36";
             fs.writeFileSync(p, JSON.stringify(c, null, "\t") + "\n");
         ' "$CFG"
-        say "pi-web-search-lite：fetch 已对齐（extractors html → deepseek → jina，minChars 50），其余配置未动"
+        say "pi-web-search-lite：fetch + userAgent 已对齐（移动端 UA；微信文章链接按 mobile/desktop 放行），其余配置未动"
     else
-        warn "无 node，请手动把 $CFG 的 fetch 设为：{\"extractors\":[\"html\",\"deepseek\",\"jina\"],\"minChars\":50}"
+        warn "无 node，请手动对齐 $CFG 的 fetch 与 userAgent（见 pi/web-search-lite/config.template.json）"
     fi
 else
     mkdir -p "$(dirname "$CFG")"
     cp "$REPO/pi/web-search-lite/config.template.json" "$CFG"
     say "pi-web-search-lite：已写入 $CFG"
     warn "还差一步：编辑 $CFG，填 deepseek 的 key（或 export DEEPSEEK_API_KEY，环境变量优先）、按机器填 proxy（直连机器留 \"\"）"
+fi
+
+# ---------- pi：zpi 运行时配置（首装写入，已有则不动） ----------
+ZCFG="$HOME/.pi/agent/zpi/config.json"
+if [ ! -f "$ZCFG" ]; then
+    mkdir -p "$(dirname "$ZCFG")"
+    cp "$REPO/pi/zpi/config.template.json" "$ZCFG"
+    say "zpi：已写入 $ZCFG（zellijSession=main；registry 等运行时状态仍在仓外）"
+else
+    say "zpi：$ZCFG 已存在，未动"
 fi
 
 # ---------- zellij ----------
